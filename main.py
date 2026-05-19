@@ -1,3 +1,5 @@
+import re
+
 def main():
     print(parser())        
     
@@ -17,6 +19,9 @@ def parser():
             if(all_cols):                
                 if(line[0] == '#'):
                     # print(line)
+                    continue
+
+                elif(re.search('-', all_cols[0])):
                     continue
                 
                 else:
