@@ -1,7 +1,9 @@
 import re
 
 def main():
-    print(parser())        
+    parsed_output = parser()
+    # for i in range(100):
+    #     print(parsed_output[i])        
     
 def parser():
     # PARSER
@@ -9,7 +11,7 @@ def parser():
     with open("en_gum-ud-train.conllu", "r") as f:
         TEXT = f.read().splitlines()
 
-    TRAIN_WORDS_TAGS = [('<s>, <s>')]
+    TRAIN_WORDS_TAGS = [('<s>', '<s>')]
 
     for line in TEXT:
 
