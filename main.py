@@ -2,15 +2,17 @@ import re
 import math
 
 def main():
-    parsed_sentences = parser()
-    emission_counts, transition_counts, tag_pairs = countTraining(parsed_sentences)
-    emission_probabilities, transition_probabilities = probabilities(emission_counts, transition_counts, tag_pairs)
-    
-def parser() -> list[list]:
-    
     with open("en_gum-ud-train.conllu", "r") as f:
         text = f.read().splitlines()
 
+    parsed_sentences = parser(text)
+    emission_counts, transition_counts, tag_pairs = countTraining(parsed_sentences)
+    emission_probabilities, transition_probabilities = probabilities(emission_counts, transition_counts, tag_pairs)
+    
+    words_sequence = [[word for word, tag in sentence] for sentence in parsed_sentences]
+
+def parser(text: list) -> list[list]:
+    
     train_words_tags = []
 
     sentence = [('<s>', '<s>')]
@@ -37,7 +39,6 @@ def parser() -> list[list]:
             train_words_tags.append(sentence)
             sentence = [('<s>', '<s>')]
             
-
     return train_words_tags    
 
 def countTraining(parsed_sentences: list[list]) -> tuple[dict, dict, dict]:
@@ -102,6 +103,11 @@ def probabilities(emission_counts: dict[dict], transition_counts: dict[dict], ta
             transition_probabilities[tag1].update({tag2: log_probability})
 
     return emission_probabilities, transition_probabilities
+
+def viterbi(word_sequence: list, train_emission_counts: dict, train_emission_probabilities: dict,
+            train_transition_counts: dict, train_transition_probabilities: dict, train_tag_pairs: dict):
+    
+    return
 
 if __name__ == "__main__":
     main()
