@@ -1,19 +1,17 @@
 import re
 
 def main():
-    parsed_output = parser()
-    # for i in range(100):
-    #     print(parsed_output[i])        
+    pass
     
 def parser():
-    # PARSER
     
     with open("en_gum-ud-train.conllu", "r") as f:
-        TEXT = f.read().splitlines()
+        text = f.read().splitlines()
 
-    TRAIN_WORDS_TAGS = [('<s>', '<s>')]
+    train_words_tags = []
 
-    for line in TEXT:
+    sentence = [('<s>', '<s>')]
+    for line in text:
 
         if(line):
             all_cols = line.split('\t')
@@ -27,16 +25,17 @@ def parser():
                     continue
                 
                 else:
-                    TRAIN_WORDS_TAGS.append((all_cols[1], all_cols[3]))
-                    print(TRAIN_WORDS_TAGS[-1])
+                    sentence.append((all_cols[1], all_cols[3]))
+                    # print(train_words_tags[-1])
             
         else:
             # new sentence
-            TRAIN_WORDS_TAGS.append(('<\s>', '<\s>'))            
-            TRAIN_WORDS_TAGS.append(('<s>', '<s>'))      
-            continue  
+            sentence.append(('<\s>', '<\s>'))            
+            train_words_tags.append(sentence)
+            sentence = [('<s>', '<s>')]
+            
 
-    return TRAIN_WORDS_TAGS    
+    return train_words_tags    
         
 if __name__ == "__main__":
     main()
