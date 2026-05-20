@@ -1,13 +1,12 @@
 import re
+import math
 
 def main():
     parsed_sentences = parser()
-    emission_counts, transition_counts = countTraining(parsed_sentences)
-    with open("testing.txt", "w+") as f:
-        f.write(str(transition_counts))
-
+    emission_counts, transition_counts, tag_pairs = countTraining(parsed_sentences)
+    emission_probabilities, transition_probabilities = probabilities(emission_counts, transition_counts, tag_pairs)
     
-def parser() -> list:
+def parser() -> list[list]:
     
     with open("en_gum-ud-train.conllu", "r") as f:
         text = f.read().splitlines()
@@ -41,15 +40,22 @@ def parser() -> list:
 
     return train_words_tags    
 
-def countTraining(parsed_sentences: list) -> tuple:
+def countTraining(parsed_sentences: list[list]) -> tuple[dict, dict, dict]:
 
     emission_counts = {}
     transition_counts = {}
+    tag_counts = {}
 
     for sentence in parsed_sentences:
+
         for pair in sentence:
             word = pair[0].lower()
             tag = pair[1]
+            
+            if tag in tag_counts:
+                tag_counts[tag] += 1
+            else:
+                tag_counts[tag] = 1
 
             if word in emission_counts:
                 if tag in emission_counts[word]:
@@ -60,16 +66,42 @@ def countTraining(parsed_sentences: list) -> tuple:
                 emission_counts.update({word: {tag: 1}})
 
         for i in range(len(sentence) - 1):
+            
             tag_1 = sentence[i][1]
             tag_2 = sentence[i + 1][1]
+            
             if tag_1 in transition_counts:
+                
                 if tag_2 in transition_counts[tag_1]:
                     transition_counts[tag_1][tag_2] += 1
                 else:
                     transition_counts[tag_1].update({tag_2: 1})
+            
             else:
-                transition_counts.update({tag_1: {tag_2: 1}})            
-    return emission_counts, transition_counts
+                transition_counts.update({tag_1: {tag_2: 1}})   
+
+    return emission_counts, transition_counts, tag_counts
+
+def probabilities(emission_counts: dict[dict], transition_counts: dict[dict], tag_pairs: dict) -> tuple[dict, dict]:
+    
+    emission_probabilities = {}
+    transition_probabilities = {}
+
+    for word in emission_counts:
+        emission_probabilities[word] = {}
+
+        for tag in emission_counts[word]:
+            log_probability = math.log(emission_counts[word][tag]) - math.log(tag_pairs[tag])
+            emission_probabilities[word].update({tag: log_probability})
+        
+    for tag1 in transition_counts:
+        transition_probabilities[tag1] = {}
+
+        for tag2 in transition_counts[tag1]:
+            log_probability = math.log(transition_counts[tag1][tag2]) - math.log(tag_pairs[tag1])
+            transition_probabilities[tag1].update({tag2: log_probability})
+
+    return emission_probabilities, transition_probabilities
 
 if __name__ == "__main__":
     main()
