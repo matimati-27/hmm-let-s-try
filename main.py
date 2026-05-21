@@ -1,6 +1,9 @@
 import re
 import math
 
+TAG_TYPES = 19
+SMOOTHING_FACTOR = 1
+
 def main():
     with open("en_gum-ud-train.conllu", "r") as f:
         text = f.read().splitlines()
@@ -8,7 +11,6 @@ def main():
     parsed_sentences = parser(text)
     emission_counts, transition_counts, tag_pairs = countTraining(parsed_sentences)
     emission_probabilities, transition_probabilities = probabilities(emission_counts, transition_counts, tag_pairs)
-    
     words_sequence = [[word for word, tag in sentence] for sentence in parsed_sentences]
 
 def parser(text: list) -> list[list]:
@@ -85,6 +87,7 @@ def countTraining(parsed_sentences: list[list]) -> tuple[dict, dict, dict]:
 
 def probabilities(emission_counts: dict[dict], transition_counts: dict[dict], tag_pairs: dict) -> tuple[dict, dict]:
     
+    VOCABULARY_SIZE = len(emission_counts)
     emission_probabilities = {}
     transition_probabilities = {}
 
@@ -92,14 +95,14 @@ def probabilities(emission_counts: dict[dict], transition_counts: dict[dict], ta
         emission_probabilities[word] = {}
 
         for tag in emission_counts[word]:
-            log_probability = math.log(emission_counts[word][tag]) - math.log(tag_pairs[tag])
+            log_probability = math.log(emission_counts[word][tag] + SMOOTHING_FACTOR) - math.log(tag_pairs[tag] + (VOCABULARY_SIZE * SMOOTHING_FACTOR))
             emission_probabilities[word].update({tag: log_probability})
         
     for tag1 in transition_counts:
         transition_probabilities[tag1] = {}
 
         for tag2 in transition_counts[tag1]:
-            log_probability = math.log(transition_counts[tag1][tag2]) - math.log(tag_pairs[tag1])
+            log_probability = math.log(transition_counts[tag1][tag2] + SMOOTHING_FACTOR) - math.log(tag_pairs[tag1] + (TAG_TYPES * SMOOTHING_FACTOR))
             transition_probabilities[tag1].update({tag2: log_probability})
 
     return emission_probabilities, transition_probabilities
@@ -107,6 +110,19 @@ def probabilities(emission_counts: dict[dict], transition_counts: dict[dict], ta
 def viterbi(word_sequence: list, train_emission_counts: dict, train_emission_probabilities: dict,
             train_transition_counts: dict, train_transition_probabilities: dict, train_tag_pairs: dict):
     
+    for sentence in word_sequence:
+        # dp[][] stores 'highest probability of any prior sequence reaching here'
+        # backpointer[][] stores 'previous tag that gave this cell its highest probability'
+        
+        dp = [[0] * TAG_TYPES for _ in range(len(sentence))]
+        backpointers = [[None] * TAG_TYPES for _ in range(len(sentence))]
+
+        # initialise dp and backpointers tables
+        for i in range(len(sentence)):
+            pass
+
+        # perform dp
+        
     return
 
 if __name__ == "__main__":

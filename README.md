@@ -1,0 +1,3 @@
+- Add Obsidian notes
+- Deal with Master branch
+- Total number of tags = 19
