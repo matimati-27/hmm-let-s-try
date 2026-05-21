@@ -12,6 +12,7 @@ def main():
     emission_counts, transition_counts, tag_pairs = countTraining(parsed_sentences)
     emission_probabilities, transition_probabilities = probabilities(emission_counts, transition_counts, tag_pairs)
     words_sequence = [[word for word, tag in sentence] for sentence in parsed_sentences]
+    viterbi(words_sequence, emission_counts, emission_probabilities, transition_counts, transition_probabilities, tag_pairs)
 
 def parser(text: list) -> list[list]:
     
@@ -110,19 +111,36 @@ def probabilities(emission_counts: dict[dict], transition_counts: dict[dict], ta
 def viterbi(word_sequence: list, train_emission_counts: dict, train_emission_probabilities: dict,
             train_transition_counts: dict, train_transition_probabilities: dict, train_tag_pairs: dict):
     
+    VOCABULARY_SIZE = len(train_emission_counts)
+
     for sentence in word_sequence:
+        
         # dp[][] stores 'highest probability of any prior sequence reaching here'
         # backpointer[][] stores 'previous tag that gave this cell its highest probability'
         
         dp = [[0] * TAG_TYPES for _ in range(len(sentence))]
         backpointers = [[None] * TAG_TYPES for _ in range(len(sentence))]
 
-        # initialise dp and backpointers tables
-        for i in range(len(sentence)):
-            pass
+        # map tags to indices
+        tags = list(train_tag_pairs.keys())
+        tag_indices = {tag: i for i, tag in enumerate(tags)}
+        
+        print(tag_indices)
+
+        dp[0][tag_indices['<s>']] = 0.0  # log(1)
+        for i in range(len(tags)):
+            if tags[i] != '<s>':
+                dp[0][i] = float('-inf')
+
+        for i in range(len(tags)):
+            backpointers[0][i] = None
 
         # perform dp
-        
+        for i in range(len(sentence)):
+            for j in range(1, len(tags)):
+                # P_emission = train_emission_probabilities[sentence[i]] if train_emission_counts[sentence[i]] else SMOOTHING_FACTOR / VOCABULARY_SIZE
+                # P_transition = train_transition_probabilities[sentence[i]] if train_transition_counts[]
+                pass
     return
 
 if __name__ == "__main__":
