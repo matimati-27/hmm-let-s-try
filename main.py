@@ -19,20 +19,28 @@ def main():
     emission_probabilities, transition_probabilities = probabilities(emission_counts, transition_counts, tag_pairs)
     
     words_sequence = [[word for word, tag in sentence] for sentence in parsed_testing_sentences]
+    
     hmm_tagged_corpus = viterbi(words_sequence, emission_counts, emission_probabilities, transition_counts, transition_probabilities, tag_pairs)
-    print(len(hmm_tagged_corpus))
+    print(len(hmm_tagged_corpus), "sentences tagged by HMM in testing corpus.")
+
+    hmm_test = ""
 
     with open("hmm_output.conllu", "w") as f:
         for sentence in hmm_tagged_corpus:
             i = 1
             for word, tag in sentence:
-                f.write(f"{i}\t{word}\t\t{tag}\n")
+                hmm_test += f"{i}\t{word}\t\t{tag}\n"
                 i += 1
-            f.write("\n")
+            hmm_test += f"\n"
+        
+        f.write(hmm_test)
+
+    accuracy_percent = accuracyCheck(parsed_testing_sentences, hmm_tagged_corpus)
+    print("Accuracy =", accuracy_percent, "%")
 
 def parser(text: list) -> list[list]:
     
-    train_words_tags = []
+    words_tags = []
 
     sentence = [('<s>', '<s>')]
     for line in text:
@@ -50,15 +58,14 @@ def parser(text: list) -> list[list]:
                 
                 else:
                     sentence.append((all_cols[1], all_cols[3]))
-                    # print(train_words_tags[-1])
             
         else:
             # new sentence
             sentence.append(('<\s>', '<\s>'))            
-            train_words_tags.append(sentence)
+            words_tags.append(sentence)
             sentence = [('<s>', '<s>')]
             
-    return train_words_tags    
+    return words_tags    
 
 def countTraining(parsed_sentences: list[list]) -> tuple[dict, dict, dict]:
 
@@ -178,6 +185,20 @@ def viterbi(word_sequence: list, train_emission_counts: dict, train_emission_pro
         hmm_tagged_sentences.append(tagged_sentence)
     
     return hmm_tagged_sentences
+
+def accuracyCheck(testing_gold: list, testing_hmm: list):
+    
+    total_tags = 0
+    incorrect_tags = 0
+    
+    for i in range(len(testing_gold)):
+        for j in range(len(testing_gold[i])):
+            
+            total_tags += 1
+            if(testing_gold[j][1] != testing_hmm[j][1]):
+                incorrect_tags += 1
+
+    return (incorrect_tags / total_tags) * 100
 
 if __name__ == "__main__":
     main()
