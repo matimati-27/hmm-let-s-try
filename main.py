@@ -6,13 +6,29 @@ SMOOTHING_FACTOR = 1
 
 def main():
     with open("en_gum-ud-train.conllu", "r") as f:
-        text = f.read().splitlines()
+        training_text = f.read().splitlines()
 
-    parsed_sentences = parser(text)
-    emission_counts, transition_counts, tag_pairs = countTraining(parsed_sentences)
+    with open("en_gum-ud-test.conllu", "r") as f:
+        testing_text = f.read().splitlines()
+
+
+    parsed_training_sentences = parser(training_text)
+    parsed_testing_sentences = parser(testing_text)
+
+    emission_counts, transition_counts, tag_pairs = countTraining(parsed_training_sentences)
     emission_probabilities, transition_probabilities = probabilities(emission_counts, transition_counts, tag_pairs)
-    words_sequence = [[word for word, tag in sentence] for sentence in parsed_sentences]
-    viterbi(words_sequence, emission_counts, emission_probabilities, transition_counts, transition_probabilities, tag_pairs)
+    
+    words_sequence = [[word for word, tag in sentence] for sentence in parsed_testing_sentences]
+    hmm_tagged_corpus = viterbi(words_sequence, emission_counts, emission_probabilities, transition_counts, transition_probabilities, tag_pairs)
+    print(len(hmm_tagged_corpus))
+
+    with open("hmm_output.conllu", "w") as f:
+        for sentence in hmm_tagged_corpus:
+            i = 1
+            for word, tag in sentence:
+                f.write(f"{i}\t{word}\t\t{tag}\n")
+                i += 1
+            f.write("\n")
 
 def parser(text: list) -> list[list]:
     
@@ -112,36 +128,56 @@ def viterbi(word_sequence: list, train_emission_counts: dict, train_emission_pro
             train_transition_counts: dict, train_transition_probabilities: dict, train_tag_pairs: dict):
     
     VOCABULARY_SIZE = len(train_emission_counts)
+    hmm_tagged_sentences = []
 
     for sentence in word_sequence:
         
         # dp[][] stores 'highest probability of any prior sequence reaching here'
         # backpointer[][] stores 'previous tag that gave this cell its highest probability'
         
-        dp = [[0] * TAG_TYPES for _ in range(len(sentence))]
+        dp = [[float('-inf')] * TAG_TYPES for _ in range(len(sentence))]
         backpointers = [[None] * TAG_TYPES for _ in range(len(sentence))]
 
         # map tags to indices
         tags = list(train_tag_pairs.keys())
         tag_indices = {tag: i for i, tag in enumerate(tags)}
         
-        print(tag_indices)
-
         dp[0][tag_indices['<s>']] = 0.0  # log(1)
-        for i in range(len(tags)):
-            if tags[i] != '<s>':
-                dp[0][i] = float('-inf')
-
-        for i in range(len(tags)):
-            backpointers[0][i] = None
 
         # perform dp
-        for i in range(len(sentence)):
-            for j in range(1, len(tags)):
-                # P_emission = train_emission_probabilities[sentence[i]] if train_emission_counts[sentence[i]] else SMOOTHING_FACTOR / VOCABULARY_SIZE
-                # P_transition = train_transition_probabilities[sentence[i]] if train_transition_counts[]
-                pass
-    return
+        for i in range(1, len(sentence)):
+            for j in range(len(tags)):
+                log_P_emission = (train_emission_probabilities[sentence[i]][tags[j]] 
+                              if sentence[i] in train_emission_counts and tags[j] in train_emission_probabilities[sentence[i]] 
+                              else math.log(SMOOTHING_FACTOR) - math.log(train_tag_pairs[tags[j]] + VOCABULARY_SIZE * SMOOTHING_FACTOR))
+                
+                for k in range(len(tags)):
+                    log_P_transition = (train_transition_probabilities[tags[k]][tags[j]] 
+                                    if tags[k] in train_transition_counts and tags[j] in train_transition_counts[tags[k]]
+                                    else math.log(SMOOTHING_FACTOR) - math.log(train_tag_pairs[tags[k]] + TAG_TYPES * SMOOTHING_FACTOR))
+                
+                    # print(log_P_emission, log_P_transition, dp[i - 1][k], dp[i][j])
+
+                    if dp[i - 1][k] + log_P_transition + log_P_emission > dp[i][j]:
+                        dp[i][j] = dp[i - 1][k] + log_P_transition + log_P_emission 
+                        backpointers[i][j] = tags[k]                    
+
+        # unfurl backpointers
+        current_word_index = len(sentence) - 1
+        current_tag = tags[dp[current_word_index].index(max(dp[current_word_index]))]
+        tag_sequence = []
+
+        while current_tag != '<s>':
+            tag_sequence.insert(0, current_tag)
+            current_tag = backpointers[current_word_index][tag_indices[current_tag]]
+            current_word_index -= 1
+        
+        tag_sequence.insert(0, '<s>')
+        
+        tagged_sentence = [(sentence[i], tag_sequence[i]) for i in range(len(sentence))]
+        hmm_tagged_sentences.append(tagged_sentence)
+    
+    return hmm_tagged_sentences
 
 if __name__ == "__main__":
     main()
