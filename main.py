@@ -195,10 +195,10 @@ def accuracyCheck(testing_gold: list, testing_hmm: list):
         for j in range(len(testing_gold[i])):
             
             total_tags += 1
-            if(testing_gold[j][1] != testing_hmm[j][1]):
+            if(testing_gold[i][j] != testing_hmm[i][j]):
                 incorrect_tags += 1
 
-    return (incorrect_tags / total_tags) * 100
+    return (1 - (incorrect_tags / total_tags)) * 100
 
 if __name__ == "__main__":
     main()
